@@ -1,0 +1,81 @@
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+
+mnist=input_data.read_data_sets("D://anaconda//python//fashion_data",one_hot=True)
+
+batch_size=64
+n_batch=mnist.train.num_examples//batch_size
+print(n_batch)
+def weight_variable(shape):
+    return tf.Variable(tf.truncated_normal(shape,stddev=0))
+
+def bias_varible(shape):
+    return tf.Variable(tf.constant(0.1,shape=shape))
+
+def conv2d(x,W):
+    return tf.nn.conv2d(x,W,strides=[1,1,1,1],padding='SAME')
+    #filter [height,width,in_channels, out_channels]
+    #strides=x [batch , in_height , in_width, in_channels]
+def max_pool_2x2(x):
+    return tf.nn.max_pool(x,ksize=[1,2,2,1],strides=[1,1,1,1],padding='SAME')
+x=tf.placeholder(tf.float32,[None,784])
+y=tf.placeholder(tf.float32,[None,10])
+keep_prob=tf.placeholder(tf.float32)
+
+x_image=tf.reshape(x,[-1,28,28,1])#[batch , in_height , in_width, in_channels]
+
+W_conv1=tf.Variable(tf.random_normal([5,5,1,16]))#5*5的采样窗口，16个卷积核从1个平面抽取特征
+b_conv1=tf.Variable(tf.random_normal([16]))#每个卷积核设置一个偏置
+
+#卷积层+激活层+池化层
+h_conv1=tf.nn.relu(conv2d(x_image,W_conv1)+b_conv1)#28*28*16
+h_pool1=max_pool_2x2(h_conv1)#池化之后变成14*14*16
+
+W_conv2=tf.Variable(tf.random_normal([5,5,16,30]))
+b_conv2=tf.Variable(tf.random_normal([30]))
+
+#卷积层+激活层+池化层
+h_conv2=tf.nn.relu(conv2d(h_pool1,W_conv2)+b_conv2)
+h_pool2=max_pool_2x2(h_conv2)
+print(h_conv1)
+print(h_pool2)
+#卷积层+BN归一化层+激活层
+W_conv3=tf.Variable(tf.random_normal([5,5,30,40]))
+b_conv3=tf.Variable(tf.random_normal([40]))
+
+h_conv3=conv2d(h_pool2,W_conv3)+b_conv3
+axis=list(range(len([5,5,30,40])-1))
+batch_mean,batch_var=tf.nn.moments(h_conv3,axis)
+offset=tf.Variable(tf.zeros([40]))
+scale=tf.Variable(tf.ones([40]))
+epsilon=1e-3
+h_out3=tf.nn.batch_normalization(h_conv3,batch_mean,batch_var,offset,scale,epsilon)
+h_jihuo3=tf.nn.relu(h_out3)
+print(h_jihuo3)
+将特征图进行展开
+h_jihuo_flat=tf.reshape(h_jihuo3,[-1,28*28*40])
+
+#全连接层
+W_fc=tf.Variable(tf.random_normal([28*28*40,1024]))
+b_fc=tf.Variable(tf.random_normal([1024]))
+h_fc=tf.nn.relu(tf.matmul(h_jihuo_flat,W_fc)+b_fc)
+#输出层
+out_w=tf.Variable(tf.random_normal([1024,10]))
+out_b=tf.Variable(tf.random_normal([10]))
+pred=tf.nn.softmax(tf.matmul(h_fc,out_w)+out_b)
+
+loss=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=pred))
+train_step=tf.train.AdamOptimizer(1e-3).minimize(loss)
+ 
+correct_prediction=tf.equal(tf.arg_max(pred,1),tf.arg_max(y,1))
+accuracy=tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+import numpy as np
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    for eopch in range(20):
+        for batch in range(n_batch):
+            batch_xs,batch_ys=mnist.train.next_batch(batch_size)
+        
+            sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys,keep_prob:0.75})
+        acc=sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels,keep_prob:0.75})
+        print("iter:"+epoch+"Loss:"+loss+"accurary:"+acc)
