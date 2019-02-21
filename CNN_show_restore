@@ -1,0 +1,29 @@
+import tensorflow as tf
+import numpy as np
+#import matplotlib.pyplot as plt
+from tensorflow.examples.tutorials.mnist import input_data
+mnist=input_data.read_data_sets("D://anaconda//python//fashion_data",one_hot=True)
+
+with tf.Session() as sess:
+    new_saver=tf.train.import_meta_graph("D://anaconda//python//CNN1.ckpt.meta")
+    new_saver.restore(sess,"D://anaconda//python//./CNN1.ckpt")
+    # tf.get_collection() 返回一个list. 但是这里只要第一个参数即可
+    acc=tf.get_collection('acc')[0]
+    pred=tf.get_collection('pred')[0]
+    cost=tf.get_collection('cost')[0]
+    
+    
+    # 因为 pred, acc 中有 placeholder，所以 sess.run(acc)的时候还需要用实际待预测的样本以及相应的参数来填充这些placeholder，
+    # 而这些需要通过graph的get_operation_by_name方法来获取。
+    graph=tf.get_default_graph()
+    x=graph.get_operation_by_name("input_x").outputs[0]
+    keep_prob=graph.get_operation_by_name("input_kp").outputs[0]
+    y=graph.get_operation_by_name("input_y").outputs[0]
+    
+    test_xs=mnist.test.images
+    test_ys=mnist.test.labels
+    
+    test_cost=sess.run(cost,feed_dict={x:mnist.test.images,y:mnist.test.labels,keep_prob:0.85})
+    test_acc = sess.run(acc, feed_dict={x:mnist.test.images, y:mnist.test.labels, keep_prob:0.85})
+    
+    print("test loss:"+str(test_cost)+"test acc"+str(test_acc))
