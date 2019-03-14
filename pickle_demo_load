@@ -1,0 +1,18 @@
+import numpy as np
+import pickle
+from sklearn import datasets
+iris=datasets.load_iris()
+digits=datasets.load_digits()
+
+# 重新加载模型进行预测
+with open('svm_model.pkl', 'rb') as f:
+    model = pickle.load(f)
+
+random_samples_index = np.random.randint(0, 1796, 5)
+random_samples = digits.data[random_samples_index, :]
+random_targets = digits.target[random_samples_index]
+
+random_predict = model.predict(random_samples)
+
+print(random_predict)
+print(random_targets)
