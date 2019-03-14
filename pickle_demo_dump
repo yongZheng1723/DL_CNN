@@ -1,0 +1,44 @@
+from sklearn import datasets
+iris=datasets.load_iris()
+digits=datasets.load_digits()
+
+print(digits.data.shape)
+print(digits.target_names)
+print(digits.target)
+#手动划分训练集，测试集
+n_test=100#测试样本个数
+train_X=digits.data[:-n_test,:]
+train_y=digits.target[:-n_test]
+
+test_X=digits.data[-n_test:,:]
+y_true=digits.target[-n_test:]
+#选择SVM模型
+from sklearn import svm
+svm_model=svm.SVC(gamma=0.001,C=100)
+
+svm_model.fit(train_X,train_y)
+#在测试集上测试模型
+y_pred_svm=svm_model.predict(test_X)
+#查看结果
+from sklearn.metrics import accuracy_score
+print(accuracy_score(y_true,y_pred_svm))
+#保存模型
+import pickle
+
+
+with open('svm_model.pkl', 'wb') as f:
+    pickle.dump(svm_model, f)
+    import numpy as np
+
+# 重新加载模型进行预测
+with open('svm_model.pkl', 'rb') as f:
+    model = pickle.load(f)
+
+random_samples_index = np.random.randint(0, 1796, 5)
+random_samples = digits.data[random_samples_index, :]
+random_targets = digits.target[random_samples_index]
+
+random_predict = model.predict(random_samples)
+
+print(random_predict)
+print(random_targets)
